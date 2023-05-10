@@ -1,0 +1,57 @@
+# importing the necessary library
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import IsolationForest 
+
+# Add library matplotlib to visualize the data
+import matplotlib.pyplot as plt
+import librosa
+sound_data, sound_sr = librosa.load('/content/faultEngine.wav')
+plt.figure(figsize=(12,6))
+librosa.display.waveshow(sound_data, sr=sound_sr)
+plt.show()
+
+model = IsolationForest(n_estimators=100, max_samples='auto', contamination=float(0.2), max_features=1.0)
+
+import librosa
+# Load audio file
+y, sr = librosa.load('/content/faultEngine.wav')
+# Extract MFCC features
+mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+
+from sklearn.model_selection import train_test_split
+# Split data into training and testing sets
+X_train, X_test = train_test_split(mfccs.T, test_size=0.2, random_state=42)
+
+from sklearn.ensemble import IsolationForest
+# Train Isolation Forest model
+model = IsolationForest(n_estimators=100, max_samples='auto', contamination=0.1, random_state=42)
+model.fit(X_train)
+
+# Predict anomalies in testing set
+y_pred = model.predict(X_test)
+
+from sklearn.metrics import precision_score, recall_score, f1_score
+# Generate ground truth labels for testing set
+y_true = [1 if i < len(X_test) // 2 else -1 for i in range(len(X_test))]
+# Compute precision, recall, and F1 score
+precision = precision_score(y_true, y_pred, pos_label=-1)
+recall = recall_score(y_true, y_pred, pos_label=-1)
+f1 = f1_score(y_true, y_pred, pos_label=-1)
+
+import matplotlib.pyplot as plt
+# Plot predicted labels and ground truth labels
+plt.figure(figsize=(10, 5))
+plt.plot(y_pred, label='Predicted Labels')
+plt.plot(y_true, label='Ground Truth Labels')
+plt.legend()
+plt.title('Anomaly Detection')
+plt.xlabel('Time (Frames)')
+plt.ylabel('Label')
+plt.show()
+
+anomalies = [i for i in range(len(y_pred)) if y_pred[i] == -1]
+print('Anomaly Indices:', anomalies)
+print('Precision:', precision)
+print('Recall:', recall)
+print('F1 Score:', f1)
